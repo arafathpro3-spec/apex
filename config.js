@@ -26,5 +26,3 @@ window.FIREBASE_CONFIG = {
   appId: "1:173561404683:web:9d5cbe86e10fd03890d60e"
 };
 
-// Initialize Firebase
-const app = initializeApp(firebaseConfig);
