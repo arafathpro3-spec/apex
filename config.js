@@ -12,12 +12,11 @@
 // sans erreur — le point en haut à droite du logo reste gris.
 
 // Import the functions you need from the SDKs you need
-import { initializeApp } from "firebase/app";
 // TODO: Add SDKs for Firebase products that you want to use
 // https://firebase.google.com/docs/web/setup#available-libraries
 
 // Your web app's Firebase configuration
-const firebaseConfig = {
+window.FIREBASE_CONFIG = {
   apiKey: "AIzaSyBN2Z5vBmHIQ6bv_vItRr4SoqqcuAa4cu0",
   authDomain: "apexcrm-d42f4.firebaseapp.com",
   databaseURL: "https://apexcrm-d42f4-default-rtdb.firebaseio.com",
