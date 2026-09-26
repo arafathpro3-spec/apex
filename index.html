@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Apex CRM</title>
+<meta name="theme-color" content="#11151b">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Apex CRM">
+<link rel="manifest" href="manifest.json">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<link rel="icon" type="image/png" href="icon.png">
+<link rel="apple-touch-icon" href="icon.png">
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<script src="config.js"></script>
+<style>
+:root{
+  --bg:#11151b; --panel:#171c24; --panel2:#1e2530; --line:#2a3240;
+  --text:#e7ecf3; --muted:#8b96a8; --accent:#e0a531; --accent2:#3fb6a8;
+  --danger:#e05f4f; --ok:#4caf7d;
+  box-sizing:border-box;
+  padding-top:env(safe-area-inset-top,0px); padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme: light){
+  :root:not([data-theme="dark"]){
+    --bg:#f6f5f2; --panel:#ffffff; --panel2:#f0eee9; --line:#e1ddd3;
+    --text:#1c1f24; --muted:#6a6f78; --accent:#b8791f; --accent2:#1f8e80;
+  }
+}
+:root[data-theme="dark"]{ --bg:#11151b; --panel:#171c24; --panel2:#1e2530; --line:#2a3240; --text:#e7ecf3; --muted:#8b96a8; --accent:#e0a531; --accent2:#3fb6a8; }
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--text);font-family:-apple-system,Segoe UI,Roboto,sans-serif;font-size:14px}
+header{position:sticky;top:0;top:env(safe-area-inset-top,0px);z-index:10;background:var(--panel);border-bottom:1px solid var(--line);padding:14px 18px;display:flex;align-items:center;gap:12px}
+header .mark{width:32px;height:32px;border-radius:8px;overflow:hidden;flex-shrink:0}
+header .mark img{width:100%;height:100%;object-fit:cover;display:block}
+header h1{font-size:16px;margin:0;letter-spacing:.2px}
+header .sub{color:var(--muted);font-size:12px}
+nav{display:flex;gap:2px;overflow-x:auto;background:var(--panel);border-bottom:1px solid var(--line);padding:0 10px}
+nav button{background:none;border:none;color:var(--muted);padding:11px 12px;font-size:13px;cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent}
+nav button.active{color:var(--text);border-color:var(--accent)}
+main{padding:16px;max-width:960px;margin:0 auto}
+.view{display:none}
+.view.active{display:block}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.card .k{color:var(--muted);font-size:11px;margin-bottom:6px}
+.card .v{font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.card .v.up{color:var(--ok)} .card .v.down{color:var(--danger)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:16px}
+.panel h2{font-size:13px;margin:0 0 12px;color:var(--muted);font-weight:600}
+.row{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.btn{background:var(--accent);color:#181818;border:none;padding:8px 14px;border-radius:7px;font-size:13px;cursor:pointer;font-weight:600}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--text)}
+.btn.small{padding:4px 9px;font-size:12px}
+.btn.danger{background:var(--danger);color:#fff}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--muted);font-weight:500;font-size:11px;padding:6px 8px;border-bottom:1px solid var(--line)}
+td{padding:8px;border-bottom:1px solid var(--line)}
+tr:last-child td{border-bottom:none}
+.tablewrap{overflow-x:auto}
+.empty{color:var(--muted);text-align:center;padding:24px 0;font-size:13px}
+.tag{padding:2px 8px;border-radius:20px;font-size:11px;background:var(--panel2);color:var(--text)}
+.tag.ok{color:var(--ok)} .tag.warn{color:var(--accent)} .tag.bad{color:var(--danger)}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.55);z-index:20;align-items:flex-end;justify-content:center}
+.modal-bg.active{display:flex}
+.modal{background:var(--panel);width:100%;max-width:480px;border-radius:14px 14px 0 0;padding:18px;max-height:85vh;overflow:auto}
+@media(min-width:600px){.modal-bg{align-items:center}.modal{border-radius:14px}}
+.field{margin-bottom:12px}
+.field label{display:block;font-size:12px;color:var(--muted);margin-bottom:5px}
+input,select,textarea{width:100%;background:var(--panel2);border:1px solid var(--line);color:var(--text);padding:9px 10px;border-radius:7px;font-size:14px;font-family:inherit}
+textarea{min-height:60px;resize:vertical}
+.modal .actions{display:flex;gap:8px;margin-top:8px}
+.modal .actions .btn{flex:1}
+canvas{width:100%;height:180px}
+.iconbtn{background:none;border:none;color:var(--muted);cursor:pointer;font-size:15px;padding:2px 6px}
+.auth-screen{display:none;position:fixed;inset:0;background:var(--bg);z-index:50;align-items:center;justify-content:center;padding:20px}
+.auth-screen.active{display:flex}
+.auth-box{width:100%;max-width:320px;background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:24px}
+.auth-box img{width:56px;height:56px;border-radius:12px;display:block;margin:0 auto 14px}
+.auth-box h2{text-align:center;margin:0 0 18px;font-size:16px}
+.auth-err{color:var(--danger);font-size:12px;margin-bottom:10px;min-height:14px}
+.settings-list{margin-bottom:14px}
+.settings-list .item{display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px solid var(--line)}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:6px;vertical-align:middle}
+.dot.today{background:var(--ok)} .dot.soon{background:var(--accent)} .dot.late{background:var(--danger)}
+.inline{display:flex;gap:8px}
+.inline > *{flex:1}
+</style>
+</head>
+<body>
+<div class="auth-screen" id="authScreen">
+  <div class="auth-box">
+    <img src="icon.png" alt="Apex">
+    <h2>Connexion — Apex CRM</h2>
+    <div class="auth-err" id="authError"></div>
+    <div class="field"><label>Email</label><input id="authEmail" type="email" autocomplete="username"></div>
+    <div class="field"><label>Mot de passe</label><input id="authPass" type="password" autocomplete="current-password"></div>
+    <button class="btn" style="width:100%" onclick="login()">Se connecter</button>
+  </div>
+</div>
+<header>
+  <div class="mark" id="logoMark"><img src="icon.png" alt="Apex"></div>
+  <div><h1 id="orgName">Apex</h1><div class="sub">CRM interne</div></div>
+  <div style="flex:1"></div>
+  <div id="syncDot" title="Local uniquement" style="width:9px;height:9px;border-radius:50%;background:var(--muted)"></div>
+  <button onclick="toggleNotifs()" style="position:relative;background:none;border:none;color:var(--text);font-size:18px;cursor:pointer;padding:4px 6px;margin-left:6px">🔔<span id="notifBadge" style="display:none;position:absolute;top:-2px;right:-2px;background:var(--danger);color:#fff;border-radius:10px;padding:0 5px;font-size:10px"></span></button>
+  <div id="notifPanel" class="panel" style="display:none;position:absolute;right:12px;top:56px;width:280px;max-height:60vh;overflow:auto;z-index:15;box-shadow:0 8px 24px rgba(0,0,0,.4)"></div>
+</header>
+<nav id="nav"></nav>
+<main>
+  <div class="view active" id="v-dashboard"></div>
+  <div class="view" id="v-crm"></div>
+  <div class="view" id="v-ventes"></div>
+  <div class="view" id="v-projets"></div>
+  <div class="view" id="v-depenses"></div>
+  <div class="view" id="v-pub"></div>
+  <div class="view" id="v-stats"></div>
+  <div class="view" id="v-params"></div>
+</main>
+<div class="modal-bg" id="modalBg"><div class="modal" id="modal"></div></div>
+
+<script>
+// ---------- store ----------
+const KEY='apex_crm_v1';
+function load(){ try{return JSON.parse(localStorage.getItem(KEY))}catch(e){return null} }
+let db = load() || { prospects:[], ventes:[], projets:[], depenses:[],
+  settings:{ nom:'Apex', adresse:'', telephone:'', email:'', services:[], tarifs:[], utilisateurs:[],
+    objectifs:{ ca:0, prospects:0, clients:0, depensesMax:0 } }, activites:[] };
+db.settings.objectifs = db.settings.objectifs || { ca:0, prospects:0, clients:0, depensesMax:0 };
+db.activites = db.activites || [];
+db.compteurs = db.compteurs || { devis:0, facture:0 };
+db.documents = db.documents || [];
+db.publications = db.publications || [];
+function nextNumero(kind){
+  const year=new Date().getFullYear();
+  db.compteurs[kind]=(db.compteurs[kind]||0)+1;
+  return (kind==='facture'?'FAC-':'DEV-')+year+'-'+String(db.compteurs[kind]).padStart(3,'0');
+}
+let fireDoc = null, applyingRemote = false, currentView = 'dashboard';
+function save(){
+  try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){ console.error(e); }
+  if(fireDoc && !applyingRemote){ fireDoc.set(db).catch(e=>console.error('Sync:',e)); }
+}
+function startSync(cfg){
+  fireDoc = firebase.firestore().collection('apex-crm').doc(cfg.workspaceId || 'data');
+  fireDoc.onSnapshot(snap=>{
+    if(snap.exists){
+      applyingRemote = true;
+      db = snap.data();
+      try{ localStorage.setItem(KEY, JSON.stringify(db)); }catch(e){}
+      applyBrand(); render[currentView]();
+      applyingRemote = false;
+    } else { fireDoc.set(db); }
+    document.getElementById('syncDot').title='Synchronisé';
+    document.getElementById('syncDot').style.background='var(--ok)';
+  }, err=>{ console.error('Sync error',err); document.getElementById('syncDot').style.background='var(--danger)';
+    document.getElementById('syncDot').title='Erreur de synchronisation — voir console'; });
+}
+function authErrorMsg(e){
+  if(['auth/invalid-credential','auth/wrong-password','auth/user-not-found'].includes(e.code)) return 'Email ou mot de passe incorrect.';
+  if(e.code==='auth/invalid-email') return 'Adresse email invalide.';
+  if(e.code==='auth/too-many-requests') return 'Trop de tentatives — réessaie dans quelques minutes.';
+  return 'Erreur de connexion.';
+}
+function login(){
+  const email=document.getElementById('authEmail').value, pass=document.getElementById('authPass').value;
+  document.getElementById('authError').textContent='';
+  firebase.auth().signInWithEmailAndPassword(email,pass).catch(e=>{ document.getElementById('authError').textContent=authErrorMsg(e); });
+}
+function logout(){ firebase.auth().signOut(); }
+function initSync(){
+  const cfg = window.FIREBASE_CONFIG;
+  if(!cfg || !cfg.apiKey){ document.getElementById('syncDot').title='Local uniquement (config.js non renseigné)'; return; }
+  try{
+    firebase.initializeApp(cfg);
+    firebase.auth().onAuthStateChanged(user=>{
+      if(user){ document.getElementById('authScreen').classList.remove('active'); startSync(cfg); }
+      else { document.getElementById('authScreen').classList.add('active'); }
+    });
+  }catch(e){ console.error(e); }
+}
+function uid(){ return Math.random().toString(36).slice(2,9); }
+const F = n => (Number(n)||0).toLocaleString('fr-FR');
+
+// ---------- schemas ----------
+const SCHEMAS = {
+  prospects:{ title:'Prospects', columns:[['entreprise','Entreprise'],['contact','Contact'],['statut','Statut'],['prochaineRelance','Relance']],
+    fields:[
+      {k:'entreprise',l:'Entreprise',t:'text',req:1},{k:'contact',l:'Contact',t:'text'},
+      {k:'telephone',l:'Téléphone / WhatsApp',t:'text'},{k:'canal',l:'Canal de relance',t:'select',opts:['WhatsApp','Téléphone','Email']},
+      {k:'secteur',l:'Secteur',t:'text'},{k:'pays',l:'Pays',t:'text'},{k:'ville',l:'Ville',t:'text'},
+      {k:'source',l:'Source',t:'text'},
+      {k:'statut',l:'Statut (pipeline)',t:'select',opts:['Nouveau','Contacté','Réponse','Diagnostic envoyé','Démo présentée','Devis envoyé','Négociation','Client','Perdu']},
+      {k:'presenceDigitale',l:'Opportunité Apex — présence digitale actuelle',t:'textarea'},
+      {k:'probleme',l:'Opportunité Apex — problème / besoin identifié',t:'textarea'},
+      {k:'solutionApex',l:'Opportunité Apex — solution Apex proposée',t:'textarea'},
+      {k:'dernierContact',l:'Dernier contact',t:'date'},{k:'prochaineRelance',l:'Prochaine relance',t:'date'},
+      {k:'notes',l:'Notes',t:'textarea'}
+    ]},
+  ventes:{ title:'Ventes', columns:[['numero','N°'],['client','Client'],['service','Service'],['montant','Montant'],['solde','Solde restant'],['statut','Statut']],
+    fields:[
+      {k:'client',l:'Client',t:'clientselect',req:1},{k:'service',l:'Service vendu',t:'text'},
+      {k:'type',l:'Type',t:'select',opts:['Devis','Facture']},
+      {k:'montant',l:'Montant (CA prévu)',t:'number'},{k:'acompte',l:'Acompte reçu',t:'number'},
+      {k:'statut',l:'Statut paiement',t:'select',opts:['Impayé','Partiel','Payé']},
+      {k:'date',l:'Date',t:'date'}
+    ]},
+  projets:{ title:'Projets', columns:[['client','Client'],['service','Service'],['progression','Progression'],['statut','Statut']],
+    fields:[
+      {k:'client',l:'Client',t:'clientselect',req:1},{k:'service',l:'Service vendu',t:'text'},
+      {k:'progression',l:'Progression manuelle (%) — ignorée si des tâches existent',t:'number'},
+      {k:'echeance',l:'Échéance',t:'date'},{k:'fichiers',l:'Fichiers / liens livrés (noms ou URLs)',t:'text'},
+      {k:'statut',l:'Statut',t:'select',opts:['À faire','En cours','Terminé']}
+    ]},
+  depenses:{ title:'Dépenses', columns:[['categorie','Catégorie'],['montant','Montant'],['date','Date']],
+    fields:[
+      {k:'categorie',l:'Catégorie',t:'select',opts:['Publicité','Hébergement','Domaines','Logiciels','Matériel','Autres']},
+      {k:'montant',l:'Montant',t:'number',req:1},{k:'date',l:'Date',t:'date'},{k:'note',l:'Note',t:'text'}
+    ]},
+  publications:{ title:'Publications', columns:[['plateforme','Plateforme'],['titre','Titre / contenu'],['statut','Statut'],['date','Date']],
+    fields:[
+      {k:'plateforme',l:'Plateforme',t:'select',opts:['Facebook','Instagram','TikTok','LinkedIn','Autre']},
+      {k:'titre',l:'Titre / résumé du contenu',t:'text',req:1},
+      {k:'lien',l:'Lien (si déjà publié)',t:'text'},
+      {k:'statut',l:'Statut',t:'select',opts:['Planifié','Publié']},
+      {k:'date',l:'Date (publiée ou prévue)',t:'date'},
+      {k:'notes',l:'Notes',t:'textarea'}
+    ]}
+};
+
+// ---------- nav ----------
+const TABS = [['dashboard','📊 Dashboard'],['crm','👥 CRM'],['ventes','💰 Ventes'],['projets','🚀 Projets'],
+  ['depenses','💸 Dépenses'],['pub','📢 Publications'],['stats','📈 Stats'],['params','⚙️ Paramètres']];
+const nav = document.getElementById('nav');
+TABS.forEach(([id,label])=>{
+  const b=document.createElement('button'); b.textContent=label; b.onclick=()=>showView(id);
+  b.dataset.id=id; nav.appendChild(b);
+});
+function showView(id){
+  currentView = id;
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('active',b.dataset.id===id));
+  document.getElementById('v-'+id).classList.add('active');
+  render[id]();
+}
+
+// ---------- generic module render ----------
+const VIEW_ID = { prospects:'crm', ventes:'ventes', projets:'projets', depenses:'depenses', publications:'pub' };
+function relanceColor(dateStr){
+  if(!dateStr) return '';
+  const d = new Date(dateStr+'T00:00:00'); const today = new Date(); today.setHours(0,0,0,0);
+  const diff = Math.round((d-today)/86400000);
+  if(diff < 0) return 'late'; if(diff === 0) return 'today'; if(diff <= 3) return 'soon'; return '';
+}
+let prospectFilter = { secteur:'', pays:'' };
+function uniqueVals(k){ return [...new Set(db.prospects.map(p=>p[k]).filter(Boolean))].sort(); }
+function filterBarHtml(){
+  const secteurs=uniqueVals('secteur'), pays=uniqueVals('pays');
+  return `<div class="panel"><div class="inline">
+    <div class="field" style="margin-bottom:0"><label>Filtrer par secteur</label>
+      <select onchange="prospectFilter.secteur=this.value;renderModule('prospects')"><option value="">Tous</option>${secteurs.map(s=>`<option ${prospectFilter.secteur===s?'selected':''}>${s}</option>`).join('')}</select></div>
+    <div class="field" style="margin-bottom:0"><label>Filtrer par pays</label>
+      <select onchange="prospectFilter.pays=this.value;renderModule('prospects')"><option value="">Tous</option>${pays.map(s=>`<option ${prospectFilter.pays===s?'selected':''}>${s}</option>`).join('')}</select></div>
+  </div></div>`;
+}
+function pipelineSummary(list){
+  const stages = SCHEMAS.prospects.fields.find(f=>f.k==='statut').opts;
+  const counts = stages.map(s=>({s,n:list.filter(p=>p.statut===s).length}));
+  const max = Math.max(1,...counts.map(c=>c.n));
+  return `<div class="panel"><h2>Pipeline commercial — ${list.length} prospects</h2>
+    ${counts.map(c=>`<div class="row" style="margin-bottom:6px">
+      <span style="font-size:12px;color:var(--muted);width:120px;flex-shrink:0">${c.s}</span>
+      <div style="flex:1;background:var(--panel2);border-radius:6px;height:10px;overflow:hidden;margin:0 10px">
+        <div style="background:var(--accent);height:100%;width:${c.n/max*100}%"></div></div>
+      <span style="font-size:12px;width:18px;text-align:right;flex-shrink:0">${c.n}</span>
+    </div>`).join('')}</div>`;
+}
+function renderModule(key){
+  const s = SCHEMAS[key]; const el = document.getElementById('v-'+VIEW_ID[key]);
+  let list = db[key];
+  if(key==='prospects') list = list.filter(p=>(!prospectFilter.secteur||p.secteur===prospectFilter.secteur)&&(!prospectFilter.pays||p.pays===prospectFilter.pays));
+  let rows = list.map(item=>{
+    const tds = s.columns.map(([k])=>{
+      let val = item[k]||'';
+      if(k==='montant') val = F(item.montant)+' F';
+      if(k==='progression') val = (item.progression||0)+'%';
+      if(k==='statut') val = `<span class="tag ${item.statut==='Payé'||item.statut==='Client'||item.statut==='Terminé'||item.statut==='Publié'?'ok':item.statut==='Perdu'||item.statut==='Impayé'?'bad':'warn'}">${item.statut||''}</span>`;
+      if(k==='prochaineRelance' && item.prochaineRelance) val = `<span class="dot ${relanceColor(item.prochaineRelance)}"></span>${item.prochaineRelance}`;
+      if(k==='solde') val = F(Math.max(0,(+item.montant||0)-(+item.acompte||0)))+' F';
+      if(k==='entreprise' && key==='prospects') val = `<a href="#" onclick="openClientProfile('${item.id}');return false" style="color:var(--text);text-decoration:underline">${item.entreprise}</a>`;
+      return `<td>${val}</td>`;
+    }).join('');
+    return `<tr>${tds}<td>${key==='ventes'?ventesLinkBtn(item):''}<button class="iconbtn" onclick="openForm('${key}','${item.id}')">✏️</button><button class="iconbtn" onclick="removeItem('${key}','${item.id}')">🗑️</button></td></tr>`;
+  }).join('');
+  function ventesLinkBtn(item){
+    let btns = `<button class="iconbtn" title="Télécharger en PDF" onclick="generatePDF('${item.id}')">📄</button>`;
+    btns += item.type==='Devis' ? `<button class="iconbtn" title="Convertir en facture" onclick="factureConvert('${item.id}')">🧾</button>` : '';
+    if(item.projetId) btns += `<span class="tag ok" title="Projet créé">🚀 lié</span>`;
+    else if((+item.acompte>0 || item.statut!=='Impayé')) btns += `<button class="iconbtn" title="Créer le projet lié" onclick="venteToProjet('${item.id}')">🚀</button>`;
+    return btns;
+  }
+  el.innerHTML = `${key==='prospects'?filterBarHtml()+pipelineSummary(list):''}
+    <div class="panel">
+      <div class="row"><h2 style="margin:0">${s.title}</h2><button class="btn small" onclick="openForm('${key}')">+ Ajouter</button></div>
+      <div class="tablewrap">
+        ${list.length? `<table><thead><tr>${s.columns.map(c=>`<th>${c[1]}</th>`).join('')}<th></th></tr></thead><tbody>${rows}</tbody></table>`
+          : `<div class="empty">Aucun élément pour le moment.</div>`}
+      </div>
+    </div>`;
+}
+function removeItem(key,id){
+  if(!confirm('Supprimer cet élément ?')) return;
+  db[key]=db[key].filter(i=>i.id!==id); save(); renderModule(key);
+  if(key==='ventes'||key==='depenses'||key==='prospects') render.dashboard();
+}
+let currentProfileId = null;
+function uploadDocument(clientName, inputEl){
+  const file = inputEl.files[0]; if(!file) return;
+  if(!(window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey)){ alert('Configure Firebase (config.js) pour activer les documents.'); return; }
+  const path = 'apex-crm/'+clientName.replace(/[^a-z0-9]/gi,'_')+'/'+Date.now()+'_'+file.name;
+  firebase.storage().ref().child(path).put(file).then(snap=>snap.ref.getDownloadURL()).then(url=>{
+    db.documents.push({id:uid(), client:clientName, name:file.name, url, date:new Date().toISOString().slice(0,10)});
+    save(); openClientProfile(currentProfileId);
+  }).catch(e=>{ console.error(e); alert("Échec de l'envoi : "+e.message); });
+}
+function openClientProfile(prospectId){
+  currentProfileId = prospectId;
+  const p = db.prospects.find(x=>x.id===prospectId); if(!p) return;
+  const ventes = db.ventes.filter(v=>v.client===p.entreprise);
+  const projets = db.projets.filter(pr=>pr.client===p.entreprise);
+  const caTotal = ventes.reduce((a,v)=>a+(v.statut==='Payé'?+v.montant||0:+v.acompte||0),0);
+  const soldeTotal = ventes.reduce((a,v)=>a+Math.max(0,(+v.montant||0)-(+v.acompte||0)),0);
+  const histo = db.activites.filter(a=>a.label.includes(p.entreprise)).slice(0,10);
+  const docs = db.documents.filter(d=>d.client===p.entreprise);
+  const rows = (list,fmt)=> list.length ? list.map(fmt).join('') : `<div class="empty" style="padding:6px 0">Aucun.</div>`;
+  document.getElementById('modal').innerHTML = `
+    <h2 style="margin-top:0;font-size:16px">${p.entreprise}</h2>
+    <div style="font-size:13px;color:var(--muted);margin-bottom:14px">
+      ${p.contact||''} ${p.telephone?' · '+p.telephone:''} ${p.canal?' · '+p.canal:''}<br>${p.secteur||''}${p.ville?' · '+p.ville:''}${p.pays?' · '+p.pays:''}
+    </div>
+    ${(p.presenceDigitale||p.probleme||p.solutionApex) ? `<div class="panel"><h2>Opportunité Apex</h2>
+      ${p.presenceDigitale?`<div style="margin-bottom:8px"><span style="color:var(--muted);font-size:12px">Présence digitale actuelle</span><br>${p.presenceDigitale}</div>`:''}
+      ${p.probleme?`<div style="margin-bottom:8px"><span style="color:var(--muted);font-size:12px">Problème / besoin identifié</span><br>${p.probleme}</div>`:''}
+      ${p.solutionApex?`<div><span style="color:var(--muted);font-size:12px">Solution Apex proposée</span><br>${p.solutionApex}</div>`:''}
+    </div>` : ''}
+    <div class="grid" style="grid-template-columns:1fr 1fr">
+      <div class="card"><div class="k">CA total encaissé</div><div class="v">${F(caTotal)} F</div></div>
+      <div class="card"><div class="k">Solde restant dû</div><div class="v">${F(soldeTotal)} F</div></div>
+    </div>
+    <h2>Projets</h2>${rows(projets,pr=>`<div class="row"><span>${pr.service||'Projet'}</span><span class="tag">${pr.statut} · ${pr.progression||0}%</span></div>`)}
+    <h2 style="margin-top:14px">Devis / Ventes</h2>${rows(ventes,v=>`<div class="row"><span>${v.type||'Devis'} — ${v.service||''}</span><span class="tag">${F(v.montant)} F · ${v.statut}</span></div>`)}
+    <h2 style="margin-top:14px">Historique</h2>${rows(histo,a=>`<div class="row"><span>${a.label}</span><span style="color:var(--muted);font-size:11px">${a.date.slice(0,10)}</span></div>`)}
+    <h2 style="margin-top:14px">Documents</h2>${rows(docs,d=>`<div class="row"><a href="${d.url}" target="_blank" style="color:var(--text)">📄 ${d.name}</a><span style="color:var(--muted);font-size:11px">${d.date}</span></div>`)}
+    <div class="field"><label>Ajouter un document (contrat, photo, livrable...)</label><input type="file" onchange="uploadDocument('${p.entreprise.replace(/'/g,"\\'")}', this)"></div>
+    <div class="actions"><button class="btn ghost" onclick="closeModal()">Fermer</button><button class="btn" onclick="closeModal();openForm('prospects','${p.id}')">Modifier le prospect</button></div>`;
+  document.getElementById('modalBg').classList.add('active');
+}
+let formTasks = [];
+function openForm(key,id){
+  const s=SCHEMAS[key]; const item = id ? db[key].find(i=>i.id===id) : {};
+  const fieldsHtml = s.fields.map(f=>{
+    const val = item[f.k]||'';
+    let input;
+    if(f.t==='select') input = `<select id="f_${f.k}">${f.opts.map(o=>`<option ${o===val?'selected':''}>${o}</option>`).join('')}</select>`;
+    else if(f.t==='clientselect'){
+      let opts = db.prospects.map(p=>p.entreprise).filter(Boolean);
+      if(val && !opts.includes(val)) opts = [val, ...opts];
+      input = opts.length ? `<select id="f_${f.k}">${opts.map(o=>`<option ${o===val?'selected':''}>${o}</option>`).join('')}</select>`
+        : `<input id="f_${f.k}" value="${val}" placeholder="Ajoute d'abord un prospect dans CRM">`;
+    }
+    else if(f.t==='textarea') input = `<textarea id="f_${f.k}">${val}</textarea>`;
+    else input = `<input id="f_${f.k}" type="${f.t}" value="${val}">`;
+    return `<div class="field"><label>${f.l}</label>${input}</div>`;
+  }).join('');
+  const taskBlock = key==='projets' ? (formTasks = item.taches ? item.taches.map(t=>({...t})) : [],
+    `<div class="field"><label>Tâches</label><div id="taskList"></div>
+      <div class="inline" style="margin-top:6px"><input id="newTaskInput" placeholder="Nouvelle tâche">
+      <button type="button" class="btn small" onclick="addTask()">+ Ajouter</button></div></div>`) : '';
+  document.getElementById('modal').innerHTML = `
+    <h2 style="margin-top:0;font-size:15px">${item.id?'Modifier':'Ajouter'} — ${s.title}</h2>
+    ${fieldsHtml}${taskBlock}
+    <div class="actions">
+      <button class="btn ghost" onclick="closeModal()">Annuler</button>
+      <button class="btn" onclick="saveForm('${key}','${id||''}')">Enregistrer</button>
+    </div>`;
+  document.getElementById('modalBg').classList.add('active');
+  if(key==='projets') renderTaskList();
+}
+function renderTaskList(){
+  const el=document.getElementById('taskList'); if(!el) return;
+  el.innerHTML = formTasks.length ? formTasks.map((t,i)=>
+    `<div class="item" style="border:none;padding:4px 0">
+      <label style="display:flex;gap:8px;align-items:center;flex:1;color:inherit">
+        <input type="checkbox" ${t.done?'checked':''} onchange="toggleTask(${i})" style="width:auto">
+        <span style="${t.done?'text-decoration:line-through;color:var(--muted)':''}">${t.text}</span>
+      </label>
+      <button type="button" class="iconbtn" onclick="removeTask(${i})">🗑️</button>
+    </div>`).join('') : `<div class="empty" style="padding:8px 0">Aucune tâche.</div>`;
+}
+function addTask(){
+  const inp=document.getElementById('newTaskInput'); if(!inp.value.trim()) return;
+  formTasks.push({id:uid(), text:inp.value.trim(), done:false}); inp.value=''; renderTaskList();
+}
+function toggleTask(i){ formTasks[i].done=!formTasks[i].done; renderTaskList(); }
+function removeTask(i){ formTasks.splice(i,1); renderTaskList(); }
+function closeModal(){ document.getElementById('modalBg').classList.remove('active'); }
+function logActivity(key,obj,isNew,prevStatut,prevContact){
+  let label=null, color='var(--ok)';
+  if(key==='prospects'){
+    if(isNew){ label='Prospect ajouté — '+obj.entreprise; color='var(--ok)'; }
+    else if(obj.dernierContact && obj.dernierContact!==prevContact){ label='Relance effectuée — '+obj.entreprise; color='var(--accent)'; }
+  } else if(key==='ventes'){
+    if(isNew){ label=(obj.type||'Devis')+' créé — '+obj.client; color='#3fa9f5'; }
+    else if(obj.statut==='Payé' && prevStatut!=='Payé'){ label='Paiement reçu — '+obj.client; color='var(--accent2)'; }
+  } else if(key==='depenses' && isNew){ label='Dépense ajoutée — '+(obj.categorie||''); color='var(--danger)'; }
+  else if(key==='projets' && isNew){ label='Projet créé — '+obj.client; color='#3fa9f5'; }
+  if(label){ db.activites.unshift({label,color,date:new Date().toISOString()}); db.activites=db.activites.slice(0,20); }
+}
+function generatePDF(id){
+  const v=db.ventes.find(x=>x.id===id); if(!v) return;
+  if(!window.jspdf){ alert('La bibliothèque PDF ne sest pas chargée (vérifie ta connexion internet).'); return; }
+  const { jsPDF } = window.jspdf; const doc = new jsPDF(); const s=db.settings;
+  doc.setFontSize(18); doc.text(s.nom||'Apex', 15, 20);
+  doc.setFontSize(10); doc.setTextColor(120);
+  doc.text([s.adresse,s.telephone,s.email].filter(Boolean).join('  ·  '), 15, 27);
+  doc.setTextColor(0); doc.setFontSize(14);
+  doc.text((v.type||'Devis').toUpperCase()+' '+(v.numero||''), 15, 45);
+  doc.setFontSize(10);
+  doc.text('Date : '+(v.date||''), 15, 53);
+  doc.text('Client : '+(v.client||''), 15, 59);
+  doc.text('Service : '+(v.service||''), 15, 65);
+  if(v.devisNumero) doc.text('Devis d\'origine : '+v.devisNumero, 15, 71);
+  doc.setDrawColor(200); doc.line(15,78,195,78);
+  doc.setFontSize(11);
+  doc.text('Montant', 15, 88); doc.text(F(v.montant)+' F', 195, 88, {align:'right'});
+  doc.text('Acompte reçu', 15, 96); doc.text(F(v.acompte)+' F', 195, 96, {align:'right'});
+  doc.setFont(undefined,'bold');
+  doc.text('Solde restant', 15, 104); doc.text(F(Math.max(0,(+v.montant||0)-(+v.acompte||0)))+' F', 195, 104, {align:'right'});
+  doc.setFont(undefined,'normal');
+  doc.text('Statut : '+v.statut, 15, 116);
+  doc.save((v.numero||'document')+'.pdf');
+}
+function factureConvert(id){
+  const v=db.ventes.find(x=>x.id===id); if(!v || v.type!=='Devis') return;
+  v.devisNumero=v.numero; v.type='Facture'; v.numero=nextNumero('facture');
+  save(); renderModule('ventes');
+}
+function venteToProjet(id){
+  const v=db.ventes.find(x=>x.id===id); if(!v || v.projetId) return;
+  const p={ id:uid(), createdAt:new Date().toISOString(), client:v.client, service:v.service||'', taches:[],
+    progression:0, echeance:'', fichiers:'', statut:'À faire', venteId:v.id };
+  db.projets.push(p); v.projetId=p.id;
+  logActivity('projets',p,true);
+  save(); renderModule('ventes'); render.dashboard();
+}
+function saveForm(key,id){
+  const s=SCHEMAS[key]; const isNew=!id; const obj = id ? db[key].find(i=>i.id===id) : { id: uid(), createdAt:new Date().toISOString() };
+  const prevStatut=obj.statut, prevContact=obj.dernierContact;
+  s.fields.forEach(f=>{ obj[f.k] = document.getElementById('f_'+f.k).value; });
+  if(key==='projets'){
+    obj.taches = formTasks;
+    if(formTasks.length) obj.progression = Math.round(formTasks.filter(t=>t.done).length/formTasks.length*100);
+  }
+  if(key==='ventes' && isNew) obj.numero = nextNumero(obj.type==='Facture'?'facture':'devis');
+  if(isNew) db[key].push(obj);
+  logActivity(key,obj,isNew,prevStatut,prevContact);
+  save(); closeModal(); renderModule(key); render.dashboard();
+}
+
+// ---------- dashboard ----------
+function thisMonthKey(){ const d=new Date(); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0'); }
+function sumThisMonth(list,dateKey,valFn){ const mk=thisMonthKey(); return list.reduce((a,i)=>a+(((i[dateKey]||'').slice(0,7)===mk)?valFn(i):0),0); }
+function countThisMonth(list,dateKey,filterFn){ const mk=thisMonthKey(); return list.filter(i=>(i[dateKey]||'').slice(0,7)===mk && (!filterFn||filterFn(i))).length; }
+function relanceStats(){
+  const today=new Date(); today.setHours(0,0,0,0); let dueToday=0, dueWeek=0;
+  db.prospects.forEach(p=>{ if(!p.prochaineRelance) return;
+    const diff=Math.round((new Date(p.prochaineRelance+'T00:00:00')-today)/86400000);
+    if(diff<=0) dueToday++; else if(diff<=7) dueWeek++; });
+  return {dueToday,dueWeek};
+}
+function bar(label,val,target,fmt,danger){
+  const pct = target>0 ? Math.min(100,Math.round(val/target*100)) : 0;
+  const over = danger && val>target;
+  return `<div style="margin-bottom:12px"><div class="row" style="margin-bottom:4px">
+    <span style="font-size:12px;color:var(--muted)">${label}</span>
+    <span style="font-size:12px">${fmt(val)} / ${fmt(target)}</span></div>
+    <div style="background:var(--panel2);border-radius:6px;height:8px;overflow:hidden">
+    <div style="background:${over?'var(--danger)':'var(--accent)'};height:100%;width:${pct}%"></div></div></div>`;
+}
+function relanceListToday(){
+  const today=new Date(); today.setHours(0,0,0,0);
+  return db.prospects.filter(p=>p.prochaineRelance && Math.round((new Date(p.prochaineRelance+'T00:00:00')-today)/86400000)<=0);
+}
+function relanceRelancer(id){
+  const p=db.prospects.find(x=>x.id===id); if(!p) return;
+  const prevContact=p.dernierContact;
+  if(p.canal==='WhatsApp' && p.telephone) window.open('https://wa.me/'+p.telephone.replace(/[^0-9]/g,''),'_blank');
+  p.dernierContact=new Date().toISOString().slice(0,10);
+  logActivity('prospects',p,false,p.statut,prevContact);
+  save(); render.dashboard();
+}
+function relanceReporter(id){
+  const p=db.prospects.find(x=>x.id===id); if(!p) return;
+  const d=new Date(); d.setDate(d.getDate()+2); p.prochaineRelance=d.toISOString().slice(0,10);
+  save(); render.dashboard();
+}
+function relanceSansReponse(id){
+  const p=db.prospects.find(x=>x.id===id); if(!p) return;
+  p.notes=(p.notes?p.notes+' | ':'')+'Sans réponse le '+new Date().toISOString().slice(0,10);
+  const d=new Date(); d.setDate(d.getDate()+5); p.prochaineRelance=d.toISOString().slice(0,10);
+  save(); render.dashboard();
+}
+function computeOpportunites(){
+  const list=[]; const today=new Date();
+  db.prospects.forEach(p=>{
+    if(p.statut==='Perdu'||p.statut==='Client') return;
+    const hasDevis = db.ventes.some(v=>v.client===p.entreprise);
+    if(p.statut==='Démo présentée' && !hasDevis)
+      list.push({entreprise:p.entreprise, texte:'Démo présentée, devis pas encore envoyé', action:'Préparer le devis', id:p.id});
+    if(p.statut==='Devis envoyé' && !hasDevis)
+      list.push({entreprise:p.entreprise, texte:"Marqué « devis envoyé » mais aucun devis enregistré", action:'Créer le devis dans Ventes', id:p.id});
+    if(p.dernierContact){
+      const days=Math.round((today-new Date(p.dernierContact+'T00:00:00'))/86400000);
+      if(days>=5 && ['Contacté','Réponse','Diagnostic envoyé'].includes(p.statut))
+        list.push({entreprise:p.entreprise, texte:'Contacté depuis '+days+'j sans avancée', action:'Relancer (J+'+days+')', id:p.id});
+    }
+  });
+  return list;
+}
+function computeNotifications(){
+  const list=[]; const today=new Date(); today.setHours(0,0,0,0);
+  db.prospects.forEach(p=>{
+    if(!p.prochaineRelance) return;
+    const diff=Math.round((new Date(p.prochaineRelance+'T00:00:00')-today)/86400000);
+    if(diff<=0) list.push({text:'Relance '+p.entreprise+(diff<0?' en retard':" aujourd'hui"), level:'bad'});
+  });
+  db.ventes.forEach(v=>{
+    if(v.type==='Facture' && v.statut!=='Payé' && v.date){
+      const days=Math.round((today-new Date(v.date+'T00:00:00'))/86400000);
+      if(days>=5) list.push({text:'Facture '+(v.numero||'')+' impayée depuis '+days+'j', level:'bad'});
+    }
+  });
+  echeanceAlerts().forEach(x=>{
+    list.push({text:'Projet '+x.p.client+' : échéance '+(x.diff<0?'dépassée de '+(-x.diff)+'j':x.diff===0?"aujourd'hui":'dans '+x.diff+'j'), level:x.diff<=0?'bad':'warn'});
+  });
+  const obj=db.settings.objectifs;
+  if(obj.ca>0){
+    const pct=Math.round(sumThisMonth(db.ventes,'date',v=>v.statut==='Payé'?+v.montant||0:+v.acompte||0)/obj.ca*100);
+    if(pct>=70) list.push({text:'Objectif CA atteint à '+pct+'%', level:'ok'});
+  }
+  return list;
+}
+function renderNotifs(){
+  const list=computeNotifications();
+  const badge=document.getElementById('notifBadge');
+  badge.style.display = list.length? 'block':'none'; badge.textContent = list.length;
+  document.getElementById('notifPanel').innerHTML = list.length ? list.map(n=>
+    `<div class="row" style="margin-bottom:8px;align-items:flex-start"><span class="tag ${n.level}" style="margin-right:6px;flex-shrink:0">●</span><span style="font-size:13px">${n.text}</span></div>`
+  ).join('') : `<div class="empty">Aucune alerte.</div>`;
+}
+function toggleNotifs(){
+  const panel=document.getElementById('notifPanel'); const open=panel.style.display==='block';
+  panel.style.display = open?'none':'block'; if(!open) renderNotifs();
+}
+function echeanceAlerts(){
+  const today=new Date(); today.setHours(0,0,0,0);
+  return db.projets.filter(p=>p.echeance && p.statut!=='Terminé').map(p=>{
+    const diff=Math.round((new Date(p.echeance+'T00:00:00')-today)/86400000); return {p,diff};
+  }).filter(x=>x.diff<=3).sort((a,b)=>a.diff-b.diff);
+}
+function tachesRestantes(){ return db.projets.reduce((a,p)=>a+((p.taches||[]).filter(t=>!t.done).length),0); }
+function render_dashboard(){
+  const ventes=db.ventes, deps=db.depenses, pros=db.prospects, proj=db.projets;
+  const caPrevu = ventes.reduce((a,v)=>a+(+v.montant||0),0);
+  const caEncaisse = ventes.reduce((a,v)=> a + (v.statut==='Payé'? (+v.montant||0) : (+v.acompte||0)),0);
+  const totalDep = deps.reduce((a,d)=>a+(+d.montant||0),0);
+  const benefice = caEncaisse - totalDep;
+  const clientsActifs = pros.filter(p=>p.statut==='Client').length;
+  const conversion = pros.length? Math.round(clientsActifs/pros.length*100) : 0;
+  const projetsEnCours = proj.filter(p=>p.statut==='En cours').length;
+  const marge = caEncaisse>0 ? Math.round(benefice/caEncaisse*100) : 0;
+  const rs = relanceStats();
+  const echeances = echeanceAlerts();
+  const obj = db.settings.objectifs;
+  const caMois = sumThisMonth(ventes,'date',v=>v.statut==='Payé'?+v.montant||0:+v.acompte||0);
+  const depMois = sumThisMonth(deps,'date',d=>+d.montant||0);
+  const prosMois = countThisMonth(pros,'createdAt');
+  const clientsMois = countThisMonth(pros,'createdAt',p=>p.statut==='Client');
+  const activFeed = db.activites.length ? db.activites.map(a=>
+    `<div class="row" style="margin-bottom:8px"><span><span class="dot" style="background:${a.color}"></span>${a.label}</span>
+     <span style="color:var(--muted);font-size:11px">${a.date.slice(0,10)}</span></div>`).join('')
+    : `<div class="empty">Aucune activité pour l'instant.</div>`;
+  const dueList = relanceListToday();
+  const opps = computeOpportunites();
+  const oppsHtml = opps.length ? opps.map(o=>
+    `<div class="row" style="margin-bottom:8px;align-items:flex-start"><span>${o.entreprise}<br><span style="color:var(--muted);font-size:12px">${o.texte}</span></span>
+     <button class="btn small" onclick="openClientProfile('${o.id}')">${o.action}</button></div>`
+  ).join('') : `<div class="empty">Aucune opportunité détectée pour l'instant.</div>`;
+  const dueHtml = dueList.length ? dueList.map(p=>`
+    <div class="row" style="margin-bottom:10px;flex-wrap:wrap;gap:8px;align-items:flex-start">
+      <span>${p.entreprise}${p.canal?' · <span style="color:var(--muted)">'+p.canal+'</span>':''}</span>
+      <span style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn small" onclick="relanceRelancer('${p.id}')">Relancer</button>
+        <button class="btn small ghost" onclick="relanceReporter('${p.id}')">Reporter</button>
+        <button class="btn small ghost" onclick="relanceSansReponse('${p.id}')">Sans réponse</button>
+      </span>
+    </div>`).join('') : `<div class="empty">Aucune relance en attente aujourd'hui.</div>`;
+  document.getElementById('v-dashboard').innerHTML = `
+    <div class="grid">
+      <div class="card"><div class="k">Chiffre d'affaires prévu</div><div class="v">${F(caPrevu)} F</div></div>
+      <div class="card"><div class="k">CA encaissé</div><div class="v">${F(caEncaisse)} F</div></div>
+      <div class="card"><div class="k">Bénéfice (marge ${marge}%)</div><div class="v ${benefice>=0?'up':'down'}">${F(benefice)} F</div></div>
+      <div class="card"><div class="k">Dépenses</div><div class="v">${F(totalDep)} F</div></div>
+      <div class="card"><div class="k">Prospects</div><div class="v">${pros.length}</div></div>
+      <div class="card"><div class="k">Taux de conversion</div><div class="v">${conversion}%</div></div>
+      <div class="card"><div class="k">Clients actifs</div><div class="v">${clientsActifs}</div></div>
+      <div class="card"><div class="k">Projets en cours</div><div class="v">${projetsEnCours}</div></div>
+      <div class="card"><div class="k">Relances aujourd'hui</div><div class="v ${rs.dueToday?'down':''}">${rs.dueToday}</div></div>
+      <div class="card"><div class="k">Relances cette semaine</div><div class="v">${rs.dueWeek}</div></div>
+      <div class="card"><div class="k">Tâches restantes</div><div class="v">${tachesRestantes()}</div></div>
+    </div>
+    <div class="panel"><h2>⚠️ Échéances proches</h2>${echeances.length?echeances.map(x=>
+      `<div class="row" style="margin-bottom:8px"><span>${x.p.client}${x.p.service?' — '+x.p.service:''}</span>
+       <span class="tag ${x.diff<0?'bad':x.diff===0?'warn':''}">${x.diff<0?'en retard de '+(-x.diff)+'j':x.diff===0?"aujourd'hui":'dans '+x.diff+'j'}</span></div>`
+    ).join(''):`<div class="empty">Aucune échéance dans les 3 prochains jours.</div>`}</div>
+    <div class="panel"><h2>🔔 Relances aujourd'hui (${dueList.length})</h2>${dueHtml}</div>
+    <div class="panel"><h2>🧠 Opportunités détectées</h2>${oppsHtml}</div>
+    <div class="panel"><h2>Objectifs du mois</h2>
+      ${bar('CA encaissé', caMois, obj.ca||0, v=>F(v)+' F')}
+      ${bar('Dépenses (plafond)', depMois, obj.depensesMax||0, v=>F(v)+' F', true)}
+      ${bar('Nouveaux prospects', prosMois, obj.prospects||0, v=>v)}
+      ${bar('Nouveaux clients', clientsMois, obj.clients||0, v=>v)}
+      <div class="empty" style="text-align:left;padding:0">Configurables dans Paramètres.</div>
+    </div>
+    <div class="panel"><h2>Activité récente</h2>${activFeed}</div>
+    <div class="panel"><h2>Chiffre d'affaires encaissé — 6 derniers mois</h2><canvas id="chDash"></canvas></div>`;
+  drawBars('chDash', monthly(ventes,'date',v=>v.statut==='Payé'?+v.montant||0:+v.acompte||0), '#e0a531');
+  renderNotifs();
+}
+
+// ---------- stats ----------
+function monthly(list, dateKey, valFn){
+  const now=new Date(); const labels=[]; const map={};
+  for(let i=5;i>=0;i--){ const d=new Date(now.getFullYear(),now.getMonth()-i,1);
+    const key=d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0');
+    labels.push(key.slice(2).replace('-','/')); map[key]=0; }
+  list.forEach(item=>{
+    const d=item[dateKey]; if(!d) return; const key=d.slice(0,7);
+    if(key in map) map[key]+=valFn(item);
+  });
+  return { labels, values:Object.values(map) };
+}
+function render_stats(){
+  const ventes=db.ventes, deps=db.depenses, pros=db.prospects;
+  const ca = monthly(ventes,'date',v=>v.statut==='Payé'?+v.montant||0:+v.acompte||0);
+  const dep = monthly(deps,'date',d=>+d.montant||0);
+  const pAdded = monthly(pros,'dernierContact',()=>1);
+  const clients = monthly(pros.filter(p=>p.statut==='Client'),'dernierContact',()=>1);
+  const benef = { labels: ca.labels, values: ca.values.map((v,i)=>v-dep.values[i]) };
+  document.getElementById('v-stats').innerHTML = `
+    <div class="panel"><h2>CA / mois</h2><canvas id="s1"></canvas></div>
+    <div class="panel"><h2>Dépenses / mois</h2><canvas id="s2"></canvas></div>
+    <div class="panel"><h2>Bénéfice / mois</h2><canvas id="s3"></canvas></div>
+    <div class="panel"><h2>Prospects & clients / mois</h2><canvas id="s4"></canvas></div>`;
+  drawBars('s1',ca,'#e0a531'); drawBars('s2',dep,'#e05f4f'); drawBars('s3',benef,'#3fb6a8');
+  drawBars2('s4',pAdded,clients,'#8b96a8','#4caf7d');
+}
+function styleOf(id){ const cs=getComputedStyle(document.documentElement); return cs; }
+function drawBars(id, data, color){
+  const cv=document.getElementById(id); if(!cv) return;
+  const dpr=window.devicePixelRatio||1; const w=cv.clientWidth||300, h=180;
+  cv.width=w*dpr; cv.height=h*dpr; const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
+  const max=Math.max(1,...data.values.map(Math.abs));
+  const bw=w/data.values.length;
+  ctx.font='11px sans-serif'; ctx.fillStyle=styleOf(id).getPropertyValue('--muted')||'#8b96a8';
+  const muted = getComputedStyle(document.body).getPropertyValue('--muted').trim()||'#8b96a8';
+  ctx.fillStyle=muted;
+  data.values.forEach((v,i)=>{
+    const bh=Math.abs(v)/max*(h-30);
+    ctx.fillStyle=color; const x=i*bw+bw*0.2, bwid=bw*0.6;
+    ctx.fillRect(x, h-30-bh, bwid, bh);
+    ctx.fillStyle=muted; ctx.fillText(data.labels[i], x, h-14);
+  });
+}
+function drawBars2(id, d1, d2, c1, c2){
+  const cv=document.getElementById(id); if(!cv) return;
+  const dpr=window.devicePixelRatio||1; const w=cv.clientWidth||300, h=180;
+  cv.width=w*dpr; cv.height=h*dpr; const ctx=cv.getContext('2d'); ctx.scale(dpr,dpr);
+  const max=Math.max(1,...d1.values,...d2.values);
+  const bw=w/d1.values.length; const muted=getComputedStyle(document.body).getPropertyValue('--muted').trim()||'#8b96a8';
+  ctx.font='11px sans-serif';
+  d1.values.forEach((v,i)=>{
+    const x=i*bw+bw*0.15, half=bw*0.32;
+    ctx.fillStyle=c1; ctx.fillRect(x, h-30-(v/max*(h-30)), half, v/max*(h-30));
+    ctx.fillStyle=c2; ctx.fillRect(x+half+2, h-30-(d2.values[i]/max*(h-30)), half, d2.values[i]/max*(h-30));
+    ctx.fillStyle=muted; ctx.fillText(d1.labels[i], x, h-14);
+  });
+}
+
+// ---------- paramètres ----------
+function render_params(){
+  const s=db.settings;
+  document.getElementById('v-params').innerHTML = `
+    <div class="panel"><h2>Coordonnées</h2>
+      <div class="field"><label>Nom de l'entreprise</label><input id="p_nom" value="${s.nom||''}"></div>
+      <div class="field"><label>Adresse</label><input id="p_adresse" value="${s.adresse||''}"></div>
+      <div class="inline">
+        <div class="field"><label>Téléphone</label><input id="p_tel" value="${s.telephone||''}"></div>
+        <div class="field"><label>Email</label><input id="p_email" value="${s.email||''}"></div>
+      </div>
+      <button class="btn" onclick="saveCoord()">Enregistrer</button>
+    </div>
+    <div class="panel"><h2>Compte</h2>
+      <div class="row"><span style="font-size:13px;color:var(--muted)">${(window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.apiKey)?(firebase.auth().currentUser?.email||'Connecté'):'Mode local (pas de connexion configurée)'}</span>
+      ${(window.FIREBASE_CONFIG&&window.FIREBASE_CONFIG.apiKey)?'<button class="btn ghost small" onclick="logout()">Se déconnecter</button>':''}</div>
+    </div>
+    <div class="panel"><h2>Objectifs mensuels</h2>
+      <div class="inline">
+        <div class="field"><label>Objectif CA / mois (F)</label><input id="o_ca" type="number" value="${s.objectifs.ca||0}"></div>
+        <div class="field"><label>Plafond dépenses / mois (F)</label><input id="o_dep" type="number" value="${s.objectifs.depensesMax||0}"></div>
+      </div>
+      <div class="inline">
+        <div class="field"><label>Objectif nouveaux prospects / mois</label><input id="o_pros" type="number" value="${s.objectifs.prospects||0}"></div>
+        <div class="field"><label>Objectif nouveaux clients / mois</label><input id="o_cli" type="number" value="${s.objectifs.clients||0}"></div>
+      </div>
+      <button class="btn" onclick="saveObjectifs()">Enregistrer</button>
+    </div>
+    <div class="panel"><h2>Services & tarifs</h2>
+      <div class="settings-list" id="svcList"></div>
+      <div class="inline"><input id="svcName" placeholder="Service"><input id="svcPrix" placeholder="Tarif" type="number"></div>
+      <button class="btn small" style="margin-top:8px" onclick="addSvc()">+ Ajouter</button>
+    </div>
+    <div class="panel"><h2>Utilisateurs</h2>
+      <div class="settings-list" id="userList"></div>
+      <div class="inline"><input id="usrNom" placeholder="Nom"><input id="usrRole" placeholder="Rôle"></div>
+      <button class="btn small" style="margin-top:8px" onclick="addUser()">+ Ajouter</button>
+    </div>
+    <div class="panel"><h2>Sauvegardes</h2>
+      <div class="inline"><button class="btn ghost" onclick="exportData()">Exporter (JSON)</button>
+      <label class="btn ghost" style="text-align:center;cursor:pointer">Importer<input type="file" accept="application/json" style="display:none" onchange="importData(event)"></label></div>
+    </div>`;
+  drawList('svcList', s.services, (i)=>`${i.name} — ${F(i.prix)} F`, 'services');
+  drawList('userList', s.utilisateurs, (i)=>`${i.name} — ${i.role}`, 'utilisateurs');
+}
+function drawList(elId, arr, fmt, key){
+  document.getElementById(elId).innerHTML = arr.length ? arr.map((i,idx)=>
+    `<div class="item"><span>${fmt(i)}</span><button class="iconbtn" onclick="delListItem('${key}',${idx})">🗑️</button></div>`
+  ).join('') : `<div class="empty">Rien pour l'instant.</div>`;
+}
+function delListItem(key,idx){ db.settings[key].splice(idx,1); save(); render_params(); }
+function addSvc(){ const n=document.getElementById('svcName').value, p=document.getElementById('svcPrix').value;
+  if(!n) return; db.settings.services.push({name:n,prix:p}); save(); render_params(); }
+function addUser(){ const n=document.getElementById('usrNom').value, r=document.getElementById('usrRole').value;
+  if(!n) return; db.settings.utilisateurs.push({name:n,role:r}); save(); render_params(); }
+function saveObjectifs(){
+  db.settings.objectifs = {
+    ca:+document.getElementById('o_ca').value||0, depensesMax:+document.getElementById('o_dep').value||0,
+    prospects:+document.getElementById('o_pros').value||0, clients:+document.getElementById('o_cli').value||0
+  };
+  save(); render.dashboard();
+}
+function saveCoord(){
+  db.settings.nom=document.getElementById('p_nom').value;
+  db.settings.adresse=document.getElementById('p_adresse').value;
+  db.settings.telephone=document.getElementById('p_tel').value;
+  db.settings.email=document.getElementById('p_email').value;
+  save(); applyBrand();
+}
+function applyBrand(){
+  document.getElementById('orgName').textContent = db.settings.nom || 'Apex';
+}
+function exportData(){
+  const blob=new Blob([JSON.stringify(db,null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='apex-crm-backup.json'; a.click();
+}
+function importData(ev){
+  const file=ev.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=()=>{ try{ db=JSON.parse(reader.result); save(); applyBrand(); showView('params'); render.dashboard(); }
+    catch(e){ alert("Fichier invalide."); } };
+  reader.readAsText(file);
+}
+
+// ---------- PWA ----------
+// Réel une fois hébergé : manifest.json, sw.js et icon.svg sont des fichiers à côté de ce index.html.
+function registerSW(){
+  if('serviceWorker' in navigator){
+    navigator.serviceWorker.register('sw.js').catch(()=>{});
+  }
+}
+
+// ---------- boot ----------
+const render = {
+  dashboard: render_dashboard,
+  crm: ()=>renderModule('prospects'),
+  ventes: ()=>renderModule('ventes'),
+  projets: ()=>renderModule('projets'),
+  depenses: ()=>renderModule('depenses'),
+  pub: ()=>renderModule('publications'),
+  stats: render_stats,
+  params: render_params
+};
+applyBrand();
+registerSW();
+initSync();
+showView('dashboard');
+renderNotifs();
+</script>
+</body>
+</html>
